@@ -1,5 +1,4 @@
-# installer for meteo.cam
-# Copyright 2018 Ingo Oppermann
+# Installer for meteo.cam
 
 from setup import ExtensionInstaller
 
