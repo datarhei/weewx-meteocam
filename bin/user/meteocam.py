@@ -40,8 +40,7 @@ class MeteoCam(weewx.restx.StdRESTful):
 
     def __init__(self, engine, config_dict):
         super(MeteoCam, self).__init__(engine, config_dict)
-        print "hello meteo.cam"
-        syslog.syslog(syslog.LOG_INFO, "restx: MeteoCam: ")
+        syslog.syslog(syslog.LOG_INFO, "restx: MeteoCam: loading")
 
         site_dict = get_site_dict(config_dict, 'MeteoCam', 'station_key', 'station_id')
         if site_dict is None:
@@ -60,10 +59,8 @@ class MeteoCam(weewx.restx.StdRESTful):
         self.loop_thread.start()
         #self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
-        print "restx: MeteoCam: Data will be uploaded for weather station %s" % site_dict['station_id']
-        syslog.syslog(syslog.LOG_INFO, "restx: MeteoCam: "
-                      "Data will be uploaded for weather station %s" %
-                      site_dict['station_id'])
+
+        syslog.syslog(syslog.LOG_INFO, "restx: MeteoCam: Data will be uploaded for weather station %s" % site_dict['station_id'])
 
     def new_loop_packet(self, event):
         """Puts new LOOP packets in the loop queue"""
@@ -132,7 +129,7 @@ class MeteoCamThread(weewx.restx.RESTThread):
         self.server_url = self.server_url.replace('<key>', station_key)
         self.server_url = self.server_url.replace('<id>', station_id)
 
-        print "started MeteoCam thread"
+        syslog.syslog(syslog.LOG_DEBUG, 'restx: MeteoCam: started thread')
 
     def check_response(self, response):
         error = True
@@ -144,7 +141,6 @@ class MeteoCamThread(weewx.restx.RESTThread):
             raise weewx.restx.FailedPost("server returned '%s'" % ', '.join(response))
 
     def format_url(self, in_record):
-
         # Convert to units required by meteo.cam
         record = weewx.units.to_METRICWX(in_record)
 
@@ -161,8 +157,7 @@ class MeteoCamThread(weewx.restx.RESTThread):
 
         valstr = '&'.join(values)
         url = self.server_url + '?' + valstr
-        print "restx: MeteoCam: url: %s" % url
-        syslog.syslog(syslog.LOG_DEBUG, 'restx: MeteoCam: url: %s' % url)
+        syslog.syslog(syslog.LOG_DEBUG, 'restx: MeteoCam: url=%s' % url)
         return url
 
 ############################# HELPER ####################################
@@ -190,8 +185,7 @@ class CachedValues(object):
                 if self.unit_system is None:
                     self.unit_system = packet['usUnits']
                 elif packet['usUnits'] != self.unit_system:
-                    raise ValueError("Mixed units encountered in cache. %s vs %s" % \
-                                     (self.unit_sytem, packet['usUnits']))
+                    raise ValueError("Mixed units encountered in cache. %s vs %s" % (self.unit_sytem, packet['usUnits']))
             else:
                 # cache each value, associating it with the it was cached
                 self.values[k] = {'value': packet[k], 'ts': ts}
@@ -220,16 +214,14 @@ def get_site_dict(config_dict, service, *args):
         site_dict = accumulateLeaves(config_dict['StdRESTful'][service],
                                      max_level=1)
     except KeyError:
-        syslog.syslog(syslog.LOG_INFO, "restx: %s: "
-                                       "No config info. Skipped." % service)
+        syslog.syslog(syslog.LOG_INFO, "restx: %s: No config info. Skipped." % service)
         return None
 
     # If site_dict has the key 'enable' and it is False, then
     # the service is not enabled.
     try:
         if not to_bool(site_dict['enable']):
-            syslog.syslog(syslog.LOG_INFO, "restx: %s: "
-                                           "Posting not enabled." % service)
+            syslog.syslog(syslog.LOG_INFO, "restx: %s: Posting not enabled." % service)
             return None
     except KeyError:
         pass
@@ -242,8 +234,7 @@ def get_site_dict(config_dict, service, *args):
             if site_dict[option] == 'replace_me':
                 raise KeyError(option)
     except KeyError, e:
-        syslog.syslog(syslog.LOG_DEBUG, "restx: %s: "
-                                        "Data will not be posted: Missing option %s" %
+        syslog.syslog(syslog.LOG_DEBUG, "restx: %s: Data will not be posted: Missing option %s" %
                       (service, e))
         return None
 
